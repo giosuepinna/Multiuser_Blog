@@ -1,30 +1,39 @@
-import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { useEffect } from 'react';
-import { mockPosts } from '../utils/mockPosts';
+import React from "react";
+import { useParams } from "react-router-dom";
+
+const mockPosts = [
+  {
+    id: 1,
+    title: "Benvenuti nel mio blog",
+    author: "Mario Rossi",
+    date: "2025-07-13",
+    content: "Questo è il post completo. Ti racconto tutto quello che ho imparato per creare un blog con React.",
+  },
+  {
+    id: 2,
+    title: "React è potente",
+    author: "Luca Bianchi",
+    date: "2025-07-12",
+    content: "Oggi parliamo di React. Un framework dichiarativo, componibile, veloce e fantastico.",
+  },
+];
 
 const PostDetail = () => {
-  const { id } = useParams(); // id preso dall'URL
-  const navigate = useNavigate();
-  const { user } = useAuth();
+  const { id } = useParams();
+  const post = mockPosts.find((p) => p.id === parseInt(id));
 
-  useEffect(() => {
-    if (!user) {
-      navigate('/login');
-    }
-  }, [user, navigate]);
-
-  const post = mockPosts.find(p => p.id === id);
-
-  if (!user || !post) return null;
+  if (!post) {
+    return <p style={{ padding: "2rem" }}>Post non trovato.</p>;
+  }
 
   return (
-    <>
+    <div style={{ padding: "2rem" }}>
       <h1>{post.title}</h1>
-      <p><strong>Autore:</strong> {post.author}</p>
+      <p style={{ fontStyle: "italic" }}>
+        scritto da <strong>{post.author}</strong> il {new Date(post.date).toLocaleDateString()}
+      </p>
       <p>{post.content}</p>
-      <button onClick={() => navigate('/blog')}>Torna alla lista</button>
-    </>
+    </div>
   );
 };
 
