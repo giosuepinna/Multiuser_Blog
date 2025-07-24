@@ -7,6 +7,8 @@ import Register from "../pages/Register";
 import Blog from "../pages/Blog";
 import PostDetail from "../pages/PostDetail";
 import ActivationPage from "../pages/ActivationPage";
+import CreatePost from "../pages/CreatePost";
+
 
 
 const Router = () => {
@@ -19,6 +21,7 @@ const Router = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/post/:id" element={<PostDetail />} />
         <Route path="/user/activate/:token" element={<ActivationPage />} />
+        <Route path="/create-post" element={<CreatePost />} />
       </Routes>
     </BrowserRouter>
   );

@@ -1,82 +1,113 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
+import axios from "axios";
 
 const Register = () => {
-  const [username, setUsername] = useState("Giosue");
-  const [email, setEmail] = useState("giosuepinn@gmail.com");
-  const [password, setPassword] = useState("123456ab");
-  const [error, setError] = useState("");
-  const { login } = useAuth();
   const navigate = useNavigate();
+  const [form, setForm] = useState({ username: "", email: "", password: "" });
+  const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setSuccessMsg("");
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/user/register`, {
-        method: "POST",
+      const res = await axios.post("https://todo-pp.longwavestudio.dev/user/register", form, {
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, email, password }),
       });
 
-      const contentType = res.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const text = await res.text();
-        throw new Error("❌ Risposta non JSON:\n" + text);
-      }
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || "Errore durante la registrazione");
-      }
-
-      console.log("✅ Registrazione riuscita:", data);
-      navigate("/login");
+      setSuccessMsg(res.data.message);
+      setTimeout(() => {
+        navigate("/login");
+      }, 3000);
     } catch (err) {
-      console.error("❌ Errore:", err.message);
-      setError("Registrazione fallita: " + err.message);
+      const msg = err.response?.data?.message || "Errore nella registrazione.";
+      setError(msg);
     }
   };
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h1>Registrati</h1>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Username:</label>
-          <input
-            type="text"
-            value={username}
-            required
-            onChange={(e) => setUsername(e.target.value)}
-          />
-        </div>
-        <div>
-          <label>Email:</label>
-          <input
-            type="email"
-            value={email}
-            required
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-        <div>
-          <label>Password:</label>
-          <input
-            type="password"
-            value={password}
-            required
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-        {error && <p style={{ color: "red" }}>{error}</p>}
-        <button type="submit">Registrati</button>
+    <div style={styles.container}>
+      <h2>Registrazione</h2>
+      <form onSubmit={handleSubmit} style={styles.form}>
+        <input
+          type="text"
+          name="username"
+          placeholder="Username"
+          value={form.username}
+          onChange={handleChange}
+          required
+          style={styles.input}
+        />
+        <input
+          type="email"
+          name="email"
+          placeholder="Email"
+          value={form.email}
+          onChange={handleChange}
+          required
+          style={styles.input}
+        />
+        <input
+          type="password"
+          name="password"
+          placeholder="Password"
+          value={form.password}
+          onChange={handleChange}
+          required
+          style={styles.input}
+        />
+        <button type="submit" style={styles.button}>Registrati</button>
       </form>
+
+      {error && <p style={styles.error}>{error}</p>}
+      {successMsg && <p style={styles.success}>{successMsg}</p>}
     </div>
   );
+};
+
+const styles = {
+  container: {
+    maxWidth: "400px",
+    margin: "2rem auto",
+    padding: "2rem",
+    border: "1px solid #ccc",
+    borderRadius: "10px",
+    backgroundColor: "#fff",
+  },
+  form: {
+    display: "flex",
+    flexDirection: "column",
+  },
+  input: {
+    marginBottom: "1rem",
+    padding: "0.5rem",
+    fontSize: "1rem",
+    borderRadius: "5px",
+    border: "1px solid #ccc",
+  },
+  button: {
+    backgroundColor: "#0077cc",
+    color: "#fff",
+    padding: "0.5rem 1rem",
+    border: "none",
+    borderRadius: "5px",
+    cursor: "pointer",
+  },
+  error: {
+    color: "red",
+    marginTop: "1rem",
+  },
+  success: {
+    color: "green",
+    marginTop: "1rem",
+  },
 };
 
 export default Register;

@@ -17,6 +17,7 @@ const Nav = () => {
       <div style={styles.links}>
         {user ? (
           <>
+            <Link to="/new" style={styles.link}>Nuovo Post</Link>
             <span style={styles.welcome}>Ciao, {user.username}</span>
             <button onClick={handleLogout} style={styles.button}>Logout</button>
           </>

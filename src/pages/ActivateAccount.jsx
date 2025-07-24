@@ -1,33 +1,64 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const ActivateAccount = () => {
   const { token } = useParams();
   const navigate = useNavigate();
   const [message, setMessage] = useState("Attivazione in corso...");
+  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     const activate = async () => {
       try {
-        const res = await fetch(`https://todo-pp.longwavestudio.dev/user/activate/${token}`);
-        if (!res.ok) throw new Error("Errore durante l'attivazione");
-        const data = await res.json();
-        setMessage(data.message || "✅ Account attivato con successo!");
-        setTimeout(() => navigate("/login"), 2000);
-      } catch (err) {
-        console.error("Errore attivazione:", err);
-        setMessage("❌ Errore durante l'attivazione dell'account.");
+        const res = await axios.get(`https://todo-pp.longwavestudio.dev/user/activate/${token}`, {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        setMessage("✅ Account attivato con successo! Verrai reindirizzato al login...");
+        setSuccess(true);
+
+        setTimeout(() => {
+          navigate("/login");
+        }, 3000);
+      } catch (error) {
+        const msg = error.response?.data?.message || "Errore nell’attivazione dell’account.";
+        setMessage(`❌ ${msg}`);
+        setSuccess(false);
       }
     };
 
-    activate();
+    if (token) activate();
   }, [token, navigate]);
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h2>{message}</h2>
+    <div style={styles.container}>
+      <h2>Attivazione Account</h2>
+      <p style={success ? styles.success : styles.error}>{message}</p>
     </div>
   );
+};
+
+const styles = {
+  container: {
+    maxWidth: "400px",
+    margin: "2rem auto",
+    padding: "2rem",
+    border: "1px solid #ccc",
+    borderRadius: "10px",
+    backgroundColor: "#fff",
+    textAlign: "center",
+  },
+  success: {
+    color: "green",
+    marginTop: "1rem",
+  },
+  error: {
+    color: "red",
+    marginTop: "1rem",
+  },
 };
 
 export default ActivateAccount;
