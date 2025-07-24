@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
 const Login = () => {
@@ -15,7 +15,6 @@ const Login = () => {
 
     try {
       const res = await fetch("https://todo-pp.longwavestudio.dev/user/login", {
-
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -26,9 +25,9 @@ const Login = () => {
       }
 
       const data = await res.json();
-      console.log("✅ Login response:", data); // <-- qui vediamo il token
+      console.log("✅ Login response:", data);
 
-      login(data); // salva nel context
+      login(data);
       navigate("/");
     } catch (err) {
       console.error("❌ Errore login:", err);
@@ -40,7 +39,7 @@ const Login = () => {
     <div style={{ padding: "2rem" }}>
       <h1>Accedi</h1>
       <form onSubmit={handleSubmit}>
-        <div>
+        <div style={{ marginBottom: "1rem" }}>
           <label>Email:</label>
           <input
             type="email"
@@ -50,7 +49,7 @@ const Login = () => {
           />
         </div>
 
-        <div>
+        <div style={{ marginBottom: "0.5rem" }}>
           <label>Password:</label>
           <input
             type="password"
@@ -58,6 +57,13 @@ const Login = () => {
             required
             onChange={(e) => setPassword(e.target.value)}
           />
+        </div>
+
+        {/* 👉 Link "Password dimenticata?" */}
+        <div style={{ marginBottom: "1rem" }}>
+          <Link to="/forgot-password" style={{ fontSize: "0.9rem", color: "#0077cc" }}>
+            Password dimenticata?
+          </Link>
         </div>
 
         {error && <p style={{ color: "red" }}>{error}</p>}

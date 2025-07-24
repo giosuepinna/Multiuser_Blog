@@ -8,6 +8,7 @@ import Blog from "./pages/Blog";
 import PostDetail from "./pages/PostDetail";
 import ActivateAccount from "./pages/ActivateAccount";
 import NewPost from "./pages/NewPost";
+import ForgotPassword from "./pages/ForgotPassword";
 
 
 const App = () => {
@@ -23,6 +24,7 @@ const App = () => {
         <Route path="/" element={user ? <Blog /> : <Navigate to="/login" />} />
         <Route path="/post/:id" element={user ? <PostDetail /> : <Navigate to="/login" />} />
         <Route path="/new" element={user ? <NewPost /> : <Navigate to="/login" />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
       </Routes>
     </BrowserRouter>
   );
