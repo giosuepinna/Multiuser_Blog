@@ -9,7 +9,6 @@ const Blog = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Carica i post una volta via REST
   useEffect(() => {
     const fetchPosts = async () => {
       try {
@@ -41,7 +40,6 @@ const Blog = () => {
     }
   }, [user]);
 
-  // Ascolta eventi socket: POST_CREATED e POST_SHARED
   useEffect(() => {
     if (!socket) return;
 
@@ -62,7 +60,6 @@ const Blog = () => {
     };
   }, [socket]);
 
-  // Test: aggiungi un post finto
   const addFakePost = () => {
     const fakePost = {
       _id: Date.now().toString(),
@@ -77,7 +74,7 @@ const Blog = () => {
   return (
     <div>
       <h2>Blog</h2>
-      <button onClick={addFakePost}>➕ Aggiungi post finto</button>
+      <button onClick={addFakePost}>➕ Aggiungi post</button>
       {loading ? (
         <p>Caricamento...</p>
       ) : posts.length === 0 ? (
