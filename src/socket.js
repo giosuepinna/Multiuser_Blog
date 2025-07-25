@@ -1,14 +1,28 @@
 import { io } from "socket.io-client";
 
-const socket = io("https://todo-pp.longwavestudio.dev/multiuserblog", {
-  autoConnect: false,
-});
+let socket = null;
 
 export const connectSocket = (token) => {
-  if (token) {
-    socket.auth = { token };
-    socket.connect();
+  if (!token) {
+    console.warn("⚠️ Nessun token disponibile per la connessione socket.");
+    return;
+  }
+
+  if (!socket || socket.disconnected) {
+    socket = io("https://todo-pp.longwavestudio.dev/multiuserblog", {
+      auth: { token },
+      transports: ["websocket"],
+    });
+
+    socket.on("connect", () => {
+      console.log("✅ Socket connesso:", socket.id);
+    });
+
+    socket.on("connect_error", (err) => {
+      console.error("❌ Errore di connessione socket:", err.message);
+    });
   }
 };
 
-export default socket;
+export const getSocket = () => socket;
+export default getSocket;

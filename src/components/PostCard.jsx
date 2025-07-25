@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 
 const PostCard = ({ post }) => {
@@ -11,8 +11,14 @@ const PostCard = ({ post }) => {
     tags = [],
   } = post;
 
-  // Estrai un estratto semplice dal contenuto HTML
+  const [liked, setLiked] = useState(false);
+
   const plainExcerpt = content?.replace(/<[^>]+>/g, "").slice(0, 200) + "...";
+
+  const toggleLike = (e) => {
+    e.preventDefault(); // evita che il click sul bottone attivi il link
+    setLiked((prev) => !prev);
+  };
 
   return (
     <Link to={`/post/${_id}`} state={{ post }} style={styles.link}>
@@ -26,6 +32,9 @@ const PostCard = ({ post }) => {
         {tags.length > 0 && (
           <p style={styles.tags}>Tag: {tags.join(", ")}</p>
         )}
+        <button onClick={toggleLike} style={styles.likeBtn}>
+          {liked ? "❤️ Mi piace" : "🤍 Mi piace"}
+        </button>
         <p style={styles.readMore}>Leggi di più →</p>
       </div>
     </Link>
@@ -53,6 +62,13 @@ const styles = {
     color: "#0077aa",
     fontSize: "0.9rem",
     marginTop: "0.5rem",
+  },
+  likeBtn: {
+    fontSize: "1rem",
+    marginTop: "0.8rem",
+    background: "none",
+    border: "none",
+    cursor: "pointer",
   },
   readMore: {
     marginTop: "1rem",
