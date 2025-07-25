@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const PostCard = ({ post }) => {
   const {
@@ -11,57 +11,92 @@ const PostCard = ({ post }) => {
     tags = [],
   } = post;
 
+  const navigate = useNavigate();
+
   const [liked, setLiked] = useState(false);
   const [visible, setVisible] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [editedContent, setEditedContent] = useState(content);
 
-  const plainExcerpt = content?.replace(/<[^>]+>/g, "").slice(0, 200) + "...";
+  const handleCardClick = () => {
+    if (!editing) {
+      navigate(`/post/${_id}`, { state: { post } });
+    }
+  };
 
   const toggleLike = (e) => {
-    e.preventDefault();
+    e.stopPropagation();
     setLiked((prev) => !prev);
   };
 
   const handleDelete = (e) => {
-    e.preventDefault();
+    e.stopPropagation();
     const conferma = window.confirm("❗ Sei sicuro di voler eliminare questo post?");
     if (conferma) {
       setVisible(false);
     }
   };
 
+  const handleEdit = (e) => {
+    e.stopPropagation();
+    setEditing(true);
+  };
+
+  const handleSave = (e) => {
+    e.stopPropagation();
+    setEditing(false);
+  };
+
   if (!visible) return null;
 
   return (
-    <Link to={`/post/${_id}`} state={{ post }} style={styles.link}>
-      <div style={styles.card}>
-        <h2>{title}</h2>
-        <p style={styles.meta}>
-          scritto da <strong>{authorId}</strong> il{" "}
-          {new Date(publishDate).toLocaleDateString()}
-        </p>
-        <p>{plainExcerpt}</p>
-        {tags.length > 0 && (
-          <p style={styles.tags}>Tag: {tags.join(", ")}</p>
+    <div onClick={handleCardClick} style={styles.card}>
+      <h2>{title}</h2>
+      <p style={styles.meta}>
+        scritto da <strong>{authorId}</strong> il{" "}
+        {new Date(publishDate).toLocaleDateString()}
+      </p>
+
+      {editing ? (
+        <textarea
+          value={editedContent}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => setEditedContent(e.target.value)}
+          rows={4}
+          style={styles.textarea}
+        />
+      ) : (
+        <p>{editedContent}</p>
+      )}
+
+      {tags.length > 0 && (
+        <p style={styles.tags}>Tag: {tags.join(", ")}</p>
+      )}
+
+      <div style={styles.actions}>
+        <button onClick={toggleLike} style={styles.likeBtn}>
+          {liked ? "❤️ Mi piace" : "🤍 Mi piace"}
+        </button>
+        {editing ? (
+          <button onClick={handleSave} style={styles.saveBtn}>
+            💾 Salva
+          </button>
+        ) : (
+          <button onClick={handleEdit} style={styles.editBtn}>
+            ✏️ Modifica
+          </button>
         )}
-        <div style={styles.actions}>
-          <button onClick={toggleLike} style={styles.likeBtn}>
-            {liked ? "❤️ Mi piace" : "🤍 Mi piace"}
-          </button>
-          <button onClick={handleDelete} style={styles.deleteBtn}>
-            🗑 Elimina
-          </button>
-        </div>
-        <p style={styles.readMore}>Leggi di più →</p>
+        <button onClick={handleDelete} style={styles.deleteBtn}>
+          🗑 Elimina
+        </button>
       </div>
-    </Link>
+
+      <p style={styles.readMore}>Leggi di più →</p>
+    </div>
   );
 };
 
 const styles = {
-  link: {
-    textDecoration: "none",
-    color: "inherit",
-  },
   card: {
     border: "1px solid #ccc",
     borderRadius: "8px",
@@ -69,6 +104,7 @@ const styles = {
     marginBottom: "1rem",
     backgroundColor: "#f9f9f9",
     transition: "box-shadow 0.2s ease",
+    cursor: "pointer",
   },
   meta: {
     color: "#555",
@@ -83,6 +119,7 @@ const styles = {
     marginTop: "0.8rem",
     display: "flex",
     gap: "1rem",
+    flexWrap: "wrap",
   },
   likeBtn: {
     fontSize: "1rem",
@@ -90,12 +127,33 @@ const styles = {
     border: "none",
     cursor: "pointer",
   },
+  editBtn: {
+    fontSize: "1rem",
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    color: "#2980b9",
+  },
+  saveBtn: {
+    fontSize: "1rem",
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    color: "#27ae60",
+  },
   deleteBtn: {
     fontSize: "1rem",
     background: "none",
     border: "none",
     cursor: "pointer",
     color: "#c0392b",
+  },
+  textarea: {
+    width: "100%",
+    padding: "0.5rem",
+    fontSize: "1rem",
+    marginTop: "0.5rem",
+    resize: "vertical",
   },
   readMore: {
     marginTop: "1rem",
