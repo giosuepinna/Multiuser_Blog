@@ -25,9 +25,17 @@ const Login = () => {
       }
 
       const data = await res.json();
-      console.log("✅ Login response:", data);
 
-      login(data);
+      if (!data.accessToken) {
+        throw new Error("Token mancante nella risposta");
+      }
+
+      // ✅ Forziamo il campo token perché AuthContext si aspetta .token
+      login({
+        ...data,
+        token: data.accessToken,
+      });
+
       navigate("/");
     } catch (err) {
       console.error("❌ Errore login:", err);

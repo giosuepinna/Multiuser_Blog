@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "../contexts/AuthContext";
 
 const Nav = () => {
   const { user, logout } = useAuth();
@@ -12,61 +12,40 @@ const Nav = () => {
   };
 
   return (
-    <nav style={styles.nav}>
-      <Link to="/" style={styles.logo}>📘 MyBlog</Link>
-      <div style={styles.links}>
-        {user ? (
+    <nav style={{ backgroundColor: "#007bff", padding: "10px", color: "white", display: "flex", justifyContent: "space-between" }}>
+      <Link to="/" style={{ fontWeight: "bold", color: "white", textDecoration: "none" }}>
+        📱 MyBlog
+      </Link>
+
+      <div>
+        {user && (
           <>
-            <Link to="/new-post" style={styles.link}>Nuovo Post</Link>
-            <span style={styles.welcome}>Ciao, {user.username}</span>
-            <button onClick={handleLogout} style={styles.button}>Logout</button>
+            <Link to="/new-post" style={{ color: "white", marginRight: "10px" }}>
+              Nuovo Post
+            </Link>
+
+            <Link to="/profile/edit" style={{ color: "white", marginRight: "10px" }}>
+              Modifica Profilo
+            </Link>
+
+            <span style={{ marginRight: "10px" }}>Ciao, {user.username}</span>
+            <button onClick={handleLogout}>Logout</button>
           </>
-        ) : (
+        )}
+
+        {!user && (
           <>
-            <Link to="/login" style={styles.link}>Login</Link>
-            <Link to="/register" style={styles.link}>Register</Link>
+            <Link to="/login" style={{ color: "white", marginRight: "10px" }}>
+              Login
+            </Link>
+            <Link to="/register" style={{ color: "white" }}>
+              Registrati
+            </Link>
           </>
         )}
       </div>
     </nav>
   );
-};
-
-const styles = {
-  nav: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    background: "#007bff",
-    color: "white",
-    padding: "1rem 2rem",
-  },
-  logo: {
-    textDecoration: "none",
-    color: "white",
-    fontWeight: "bold",
-    fontSize: "1.2rem",
-  },
-  links: {
-    display: "flex",
-    alignItems: "center",
-    gap: "1rem",
-  },
-  link: {
-    color: "white",
-    textDecoration: "none",
-  },
-  welcome: {
-    marginRight: "1rem",
-  },
-  button: {
-    background: "white",
-    color: "#007bff",
-    border: "none",
-    padding: "0.5rem 1rem",
-    borderRadius: "4px",
-    cursor: "pointer",
-  },
 };
 
 export default Nav;

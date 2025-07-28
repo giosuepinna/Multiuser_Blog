@@ -1,7 +1,6 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
-
 import Nav from "./components/Nav";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -11,9 +10,16 @@ import ActivateAccount from "./pages/ActivateAccount";
 import NewPost from "./pages/NewPost";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import EditProfile from "./pages/EditProfile";
 
 const App = () => {
-  const { user } = useAuth();
+  const { user, loadingUser } = useAuth();
+  console.log("👤 user:", user);
+
+
+  if (loadingUser) {
+    return <p className="text-center mt-10">Caricamento utente...</p>;
+  }
 
   return (
     <BrowserRouter>
@@ -30,6 +36,7 @@ const App = () => {
         <Route path="/" element={user ? <Blog /> : <Navigate to="/login" />} />
         <Route path="/post/:id" element={user ? <PostDetail /> : <Navigate to="/login" />} />
         <Route path="/new-post" element={user ? <NewPost /> : <Navigate to="/login" />} />
+        <Route path="/profile/edit" element={user ? <EditProfile /> : <Navigate to="/login" />} />
       </Routes>
     </BrowserRouter>
   );

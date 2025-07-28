@@ -1,191 +1,95 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useLocation } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import { useSocket } from "../contexts/SocketContext";
-import axios from "axios";
+import { useAuth } from "../contexts/AuthContext";
 
 const PostDetail = () => {
-  const { id: routeId } = useParams();
-  const { state } = useLocation();
+  const { user } = useAuth();
   const socket = useSocket();
+  const { postId } = useParams();
+  const location = useLocation();
+  const initialPost = location.state?.post;
 
-  const [post, setPost] = useState(state?.post || null);
-  const [loading, setLoading] = useState(!state?.post);
+  const [post, setPost] = useState(initialPost || null);
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
 
-  const postId = post?._id || routeId;
-
-  // 📥 Recupera post via socket se non già passato via state
+  // Invia richiesta commenti appena arriva il socket
   useEffect(() => {
-    if (!socket || post || !routeId) return;
+    if (socket && postId) {
+      console.log("📥 Richiesta commenti per post:", postId);
+      socket.emit("GET_COMMENTS_FOR_POST", { postId });
+    }
+  }, [socket, postId]);
 
-    socket.emit("get-post-by-id", routeId);
+  // Riceve i commenti dal backend
+  useEffect(() => {
+    if (!socket) return;
 
-    const handlePostData = (data) => {
-      setPost(data);
-      setLoading(false);
+    const handleComments = (data) => {
+      console.log("📨 Commenti ricevuti:", data);
+      setComments(data);
     };
 
-    socket.on("post-data", handlePostData);
+    socket.on("COMMENTS_FOR_POST", handleComments);
 
     return () => {
-      socket.off("post-data", handlePostData);
+      socket.off("COMMENTS_FOR_POST", handleComments);
     };
-  }, [socket, post, routeId]);
+  }, [socket]);
 
-  // 📥 Recupera commenti via REST
-  useEffect(() => {
-    if (!postId) return;
-
-    const fetchComments = async () => {
-      try {
-        const res = await axios.get(
-          `https://todo-pp.longwavestudio.dev/posts/${postId}/comments`
-        );
-        setComments(res.data.comments || []);
-      } catch (err) {
-        console.error("Errore recuperando commenti:", err);
-      }
-    };
-
-    fetchComments();
-  }, [postId]);
-
-  // 📨 Invia nuovo commento
-  const handleSubmit = async (e) => {
+  // Aggiungi nuovo commento
+  const handleSubmit = (e) => {
     e.preventDefault();
+
     if (!newComment.trim()) return;
 
-    // Invia via socket
-    socket.emit("new-comment", {
+    const payload = {
       postId,
-      text: newComment,
-    });
+      content: newComment,
+      userId: user.sub,
+      author: user.email,
+    };
 
-    // Aggiungi localmente (senza aspettare il refresh REST)
-    setComments((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        authorId: "Tu",
-        text: newComment,
-      },
-    ]);
+    console.log("📤 Emit ADD_COMMENT:", payload);
+    socket.emit("ADD_COMMENT", payload);
     setNewComment("");
+
+    // ⏳ Ri-chiedi i commenti dopo 1 secondo
+    setTimeout(() => {
+      console.log("⏳ Ri-chiedo i commenti dopo invio...");
+      socket.emit("GET_COMMENTS_FOR_POST", { postId });
+    }, 1000);
   };
 
-  if (loading) return <p>Caricamento...</p>;
-  if (!post) return <p>Post non trovato.</p>;
-
   return (
-    <div style={styles.container}>
-      <h1>{post.title}</h1>
-      <p style={styles.meta}>
-        ✍️ scritto da <strong>{post.author?.username || post.authorId}</strong> il{" "}
-        {new Date(post.publishDate).toLocaleDateString()}
-      </p>
-      <p>{post.content}</p>
-
-      {post.tags?.length > 0 && (
-        <p style={styles.tags}>🏷️ Tag: {post.tags.join(", ")}</p>
+    <div style={{ padding: "1rem" }}>
+      <h2>{post?.title || "Post"}</h2>
+      <p><strong>Autore:</strong> {post?.author || post?.authorId}</p>
+      <p>{post?.content}</p>
+      <hr />
+      <h3>Commenti</h3>
+      {comments.length === 0 ? (
+        <p>Nessun commento</p>
+      ) : (
+        comments.map((c) => (
+          <div key={c._id || c.content + c.author} style={{ marginBottom: "1rem" }}>
+            <p><strong>{c.author}:</strong> {c.content}</p>
+          </div>
+        ))
       )}
-
-      <p style={styles.stats}>
-        ❤️ {post.total_likes || 0} like | 💬 {comments.length} commenti
-      </p>
-
-      <div style={styles.commentSection}>
-        <h3>💬 Commenti</h3>
-        {comments.length > 0 ? (
-          <ul style={styles.commentList}>
-            {comments.map((comment) => (
-              <li key={comment._id || comment.id} style={styles.comment}>
-                <strong>{comment.authorId || "Anonimo"}:</strong> {comment.text}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>Nessun commento ancora.</p>
-        )}
-
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <textarea
-            rows="3"
-            placeholder="Scrivi un commento..."
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            style={styles.textarea}
-          />
-          <button type="submit" style={styles.button}>
-            Invia
-          </button>
-        </form>
-      </div>
+      <form onSubmit={handleSubmit} style={{ marginTop: "1rem" }}>
+        <textarea
+          value={newComment}
+          onChange={(e) => setNewComment(e.target.value)}
+          placeholder="Scrivi un commento..."
+          rows={3}
+          style={{ width: "100%", padding: "0.5rem" }}
+        />
+        <button type="submit" style={{ marginTop: "0.5rem" }}>Invia</button>
+      </form>
     </div>
   );
-};
-
-const styles = {
-  container: {
-    padding: "2rem",
-    backgroundColor: "#fff",
-    borderRadius: "10px",
-    boxShadow: "0 0 8px rgba(0, 0, 0, 0.1)",
-    maxWidth: "700px",
-    margin: "2rem auto",
-  },
-  meta: {
-    color: "#666",
-    fontSize: "0.9rem",
-    marginBottom: "1rem",
-  },
-  tags: {
-    color: "#0077aa",
-    marginTop: "1rem",
-    fontStyle: "italic",
-  },
-  stats: {
-    marginTop: "1rem",
-    fontWeight: "bold",
-  },
-  commentSection: {
-    marginTop: "2rem",
-    paddingTop: "1rem",
-    borderTop: "1px solid #ccc",
-  },
-  commentList: {
-    listStyleType: "none",
-    padding: 0,
-  },
-  comment: {
-    backgroundColor: "#f1f1f1",
-    padding: "0.5rem",
-    borderRadius: "5px",
-    marginBottom: "0.5rem",
-  },
-  form: {
-    marginTop: "1rem",
-    display: "flex",
-    flexDirection: "column",
-  },
-  textarea: {
-    resize: "vertical",
-    padding: "0.5rem",
-    fontSize: "1rem",
-    borderRadius: "5px",
-    border: "1px solid #ccc",
-    width: "100%",
-    marginBottom: "0.5rem",
-  },
-  button: {
-    alignSelf: "flex-start",
-    backgroundColor: "#0077cc",
-    color: "#fff",
-    border: "none",
-    padding: "0.5rem 1rem",
-    borderRadius: "5px",
-    cursor: "pointer",
-  },
 };
 
 export default PostDetail;
