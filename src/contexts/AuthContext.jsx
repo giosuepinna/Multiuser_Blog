@@ -8,27 +8,8 @@ export const AuthProvider = ({ children }) => {
   const [loadingUser, setLoadingUser] = useState(true);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-
-    if (savedUser) {
-      try {
-        const parsedUser = JSON.parse(savedUser);
-
-        // Controllo: deve esserci ID utente e token valido
-        if (parsedUser?.id && (parsedUser.token || parsedUser.accessToken)) {
-          const token = parsedUser.token || parsedUser.accessToken;
-          const completeUser = { ...parsedUser, token };
-          setUser(completeUser);
-          connectSocket(token);
-        } else {
-          localStorage.removeItem("user");
-        }
-      } catch (err) {
-        console.error("❌ Errore parsing utente da localStorage:", err);
-        localStorage.removeItem("user");
-      }
-    }
-
+    // 🔴 Disabilita il login automatico eliminando sempre l'utente salvato
+    localStorage.removeItem("user");
     setLoadingUser(false);
   }, []);
 

@@ -12,35 +12,44 @@ const Nav = () => {
   };
 
   return (
-    <nav style={{ backgroundColor: "#007bff", padding: "10px", color: "white", display: "flex", justifyContent: "space-between" }}>
-      <Link to="/" style={{ fontWeight: "bold", color: "white", textDecoration: "none" }}>
-        📱 MyBlog
-      </Link>
-
+    <nav
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "1rem 2rem",
+        borderBottom: "1px solid #ccc",
+        marginBottom: "2rem",
+      }}
+    >
       <div>
-        {user && (
+        <Link to="/" style={{ textDecoration: "none", fontWeight: "bold", fontSize: "1.2rem" }}>
+          📝 Multiuser Blog
+        </Link>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+        {user ? (
           <>
-            <Link to="/new-post" style={{ color: "white", marginRight: "10px" }}>
-              Nuovo Post
-            </Link>
+            <Link to="/new-post">Nuovo post</Link>
+            <Link to="/profile/edit">Profilo</Link>
 
-            <Link to="/profile/edit" style={{ color: "white", marginRight: "10px" }}>
-              Modifica Profilo
-            </Link>
+            {user.avatar && (
+              <img
+                src={user.avatar}
+                alt="Avatar"
+                style={{ width: "40px", height: "40px", borderRadius: "50%" }}
+              />
+            )}
 
-            <span style={{ marginRight: "10px" }}>Ciao, {user.username}</span>
-            <button onClick={handleLogout}>Logout</button>
+            <button onClick={handleLogout} style={{ padding: "6px 12px" }}>
+              Logout
+            </button>
           </>
-        )}
-
-        {!user && (
+        ) : (
           <>
-            <Link to="/login" style={{ color: "white", marginRight: "10px" }}>
-              Login
-            </Link>
-            <Link to="/register" style={{ color: "white" }}>
-              Registrati
-            </Link>
+            <Link to="/login">Login</Link>
+            <Link to="/register">Registrati</Link>
           </>
         )}
       </div>

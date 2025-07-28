@@ -1,8 +1,11 @@
 import React, { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const EditProfile = () => {
-  const { user } = useAuth();
+  const { user, login } = useAuth();
+  const navigate = useNavigate();
+
   const [username, setUsername] = useState(user?.username || "");
   const [bio, setBio] = useState(user?.bio || "");
   const [avatarFile, setAvatarFile] = useState(null);
@@ -17,7 +20,7 @@ const EditProfile = () => {
       formData.append("username", username);
       formData.append("bio", bio);
       if (avatarFile) {
-        formData.append("avatar", avatarFile); // 👈 avatar deve chiamarsi così secondo le API
+        formData.append("avatar", avatarFile);
       }
 
       const res = await fetch("https://todo-pp.longwavestudio.dev/user/profile", {
@@ -29,6 +32,18 @@ const EditProfile = () => {
       });
 
       if (!res.ok) throw new Error("Errore durante l'aggiornamento del profilo");
+
+      const updated = await res.json();
+
+      const updatedUser = {
+        ...user,
+        username: updated.username,
+        bio: updated.bio,
+        avatar: updated.avatar,
+      };
+
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      login(updatedUser); // 🔁 Aggiorna contesto e localStorage
 
       setMessage("✅ Profilo aggiornato con successo!");
     } catch (err) {
@@ -72,7 +87,6 @@ const EditProfile = () => {
           />
         </div>
 
-        {/* 👇 Avatar preview + input */}
         {user?.avatar && (
           <div style={{ marginBottom: "1rem" }}>
             <label>Avatar attuale:</label>
@@ -96,6 +110,14 @@ const EditProfile = () => {
 
         <button type="submit" style={{ padding: "8px 16px" }}>
           Salva modifiche
+        </button>
+
+        <button
+          type="button"
+          onClick={() => navigate("/")}
+          style={{ marginLeft: "1rem", padding: "8px 16px", background: "#ccc" }}
+        >
+          Torna alla Home
         </button>
 
         {message && (
