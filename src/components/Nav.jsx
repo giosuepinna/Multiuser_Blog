@@ -12,47 +12,31 @@ const Nav = () => {
   };
 
   return (
-    <nav
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: "1rem 2rem",
-        borderBottom: "1px solid #ccc",
-        marginBottom: "2rem",
-      }}
-    >
-      <div>
-        <Link to="/" style={{ textDecoration: "none", fontWeight: "bold", fontSize: "1.2rem" }}>
-          📝 Multiuser Blog
-        </Link>
-      </div>
+    <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem" }}>
+      <Link to="/" style={{ fontWeight: "bold", fontSize: "1.2rem", textDecoration: "none" }}>
+        📝 Multiuser Blog
+      </Link>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-        {user ? (
-          <>
-            <Link to="/new-post">Nuovo post</Link>
-            <Link to="/profile/edit">Profilo</Link>
+      {user && (
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <Link to="/create">Nuovo post</Link>
+          <Link to="/profile">Profilo</Link>
 
-            {user.avatar && (
-              <img
-                src={user.avatar}
-                alt="Avatar"
-                style={{ width: "40px", height: "40px", borderRadius: "50%" }}
-              />
-            )}
+          <Link to="/profile">
+            <img
+              src={user.avatar}
+              alt="Avatar"
+              style={{ width: "32px", height: "32px", borderRadius: "50%", objectFit: "cover" }}
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = "https://via.placeholder.com/32?text=?"; // fallback se immagine non valida
+              }}
+            />
+          </Link>
 
-            <button onClick={handleLogout} style={{ padding: "6px 12px" }}>
-              Logout
-            </button>
-          </>
-        ) : (
-          <>
-            <Link to="/login">Login</Link>
-            <Link to="/register">Registrati</Link>
-          </>
-        )}
-      </div>
+          <button onClick={handleLogout}>Logout</button>
+        </div>
+      )}
     </nav>
   );
 };

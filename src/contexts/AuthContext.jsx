@@ -1,24 +1,16 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { connectSocket } from "../socket";
+import React, { createContext, useContext, useState } from "react";
 
-export const AuthContext = createContext(null);
+const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loadingUser, setLoadingUser] = useState(true);
-
-  useEffect(() => {
-    // 🔴 Disabilita il login automatico eliminando sempre l'utente salvato
-    localStorage.removeItem("user");
-    setLoadingUser(false);
-  }, []);
+  const [user, setUser] = useState(() => {
+    const storedUser = localStorage.getItem("user");
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
 
   const login = (userData) => {
-    const token = userData.token || userData.accessToken || "";
-    const userWithToken = { ...userData, token };
-    setUser(userWithToken);
-    localStorage.setItem("user", JSON.stringify(userWithToken));
-    connectSocket(token);
+    setUser(userData);
+    localStorage.setItem("user", JSON.stringify(userData));
   };
 
   const logout = () => {
@@ -27,7 +19,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loadingUser }}>
+    <AuthContext.Provider value={{ user, setUser, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

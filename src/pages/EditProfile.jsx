@@ -1,127 +1,92 @@
 import React, { useState } from "react";
+import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 const EditProfile = () => {
-  const { user, login } = useAuth();
+  const { user, setUser } = useAuth();
   const navigate = useNavigate();
 
   const [username, setUsername] = useState(user?.username || "");
-  const [bio, setBio] = useState(user?.bio || "");
-  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatar, setAvatar] = useState(user?.avatar || "");
   const [message, setMessage] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setMessage("");
 
     try {
-      const formData = new FormData();
-      formData.append("username", username);
-      formData.append("bio", bio);
-      if (avatarFile) {
-        formData.append("avatar", avatarFile);
-      }
-
-      const res = await fetch("https://todo-pp.longwavestudio.dev/user/profile", {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${user.token || user.accessToken}`,
+      const response = await axios.patch(
+        "https://todo-pp.longwavestudio.dev/user/profile",
+        {
+          username,
+          avatar,
         },
-        body: formData,
-      });
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${user.accessToken}`,
+          },
+        }
+      );
 
-      if (!res.ok) throw new Error("Errore durante l'aggiornamento del profilo");
-
-      const updated = await res.json();
-
-      const updatedUser = {
-        ...user,
-        username: updated.username,
-        bio: updated.bio,
-        avatar: updated.avatar,
-      };
-
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-      login(updatedUser); // 🔁 Aggiorna contesto e localStorage
-
-      setMessage("✅ Profilo aggiornato con successo!");
-    } catch (err) {
-      console.error(err);
-      setMessage("❌ Errore: " + err.message);
+      if (response.status === 200) {
+        const updatedUser = { ...user, username, avatar };
+        setUser(updatedUser);
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+        setMessage("✅ Profilo aggiornato con successo.");
+      } else {
+        setMessage("❌ Errore durante il salvataggio del profilo.");
+      }
+    } catch (error) {
+      console.error("❌ Errore:", error);
+      setMessage("❌ Errore durante il salvataggio del profilo.");
     }
   };
 
   return (
-    <div style={{ maxWidth: "500px", margin: "2rem auto", padding: "1rem" }}>
+    <div style={{ padding: "2rem" }}>
       <h2>Modifica Profilo</h2>
-      <form onSubmit={handleSubmit} encType="multipart/form-data">
-        <div style={{ marginBottom: "1rem" }}>
-          <label>Email (non modificabile):</label>
-          <input
-            type="email"
-            value={user?.email}
-            disabled
-            style={{ width: "100%", padding: "8px" }}
-          />
-        </div>
-
-        <div style={{ marginBottom: "1rem" }}>
-          <label>Nome:</label>
+      <form onSubmit={handleSubmit}>
+        <div>
+          <label>Username:</label>{" "}
           <input
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            style={{ width: "100%", padding: "8px" }}
             required
           />
         </div>
-
-        <div style={{ marginBottom: "1rem" }}>
-          <label>Bio:</label>
-          <textarea
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            rows="3"
-            style={{ width: "100%", padding: "8px" }}
+        <div>
+          <label>Avatar (URL Immagine):</label>{" "}
+          <input
+            type="text"
+            value={avatar}
+            onChange={(e) => setAvatar(e.target.value)}
+            placeholder="https://..."
           />
         </div>
-
-        {user?.avatar && (
-          <div style={{ marginBottom: "1rem" }}>
-            <label>Avatar attuale:</label>
-            <br />
-            <img
-              src={user.avatar}
-              alt="Avatar"
-              style={{ maxWidth: "100px", borderRadius: "8px", marginTop: "0.5rem" }}
-            />
+        {avatar && (
+          <div style={{ marginTop: "1rem" }}>
+            <label>Anteprima avatar:</label>
+            <div>
+              <img
+                src={avatar}
+                alt="Avatar Preview"
+                width="100"
+                height="100"
+                style={{ borderRadius: "50%" }}
+              />
+            </div>
           </div>
         )}
-
-        <div style={{ marginBottom: "1rem" }}>
-          <label>Nuovo avatar:</label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setAvatarFile(e.target.files[0])}
-          />
+        <div style={{ marginTop: "1rem" }}>
+          <button type="submit">Salva modifiche</button>
+          <button type="button" onClick={() => navigate("/")}>
+            Torna alla Home
+          </button>
         </div>
-
-        <button type="submit" style={{ padding: "8px 16px" }}>
-          Salva modifiche
-        </button>
-
-        <button
-          type="button"
-          onClick={() => navigate("/")}
-          style={{ marginLeft: "1rem", padding: "8px 16px", background: "#ccc" }}
-        >
-          Torna alla Home
-        </button>
-
         {message && (
-          <p style={{ marginTop: "1rem", color: message.startsWith("✅") ? "green" : "red" }}>
+          <p style={{ marginTop: "1rem", color: message.includes("✅") ? "green" : "red" }}>
             {message}
           </p>
         )}
