@@ -11,11 +11,11 @@ import NewPost from "./pages/NewPost";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import EditProfile from "./pages/EditProfile";
+import Profile from "./pages/Profile";
 
 const App = () => {
   const { user, loadingUser } = useAuth();
   console.log("👤 user:", user);
-
 
   if (loadingUser) {
     return <p className="text-center mt-10">Caricamento utente...</p>;
@@ -36,6 +36,16 @@ const App = () => {
         <Route path="/" element={user ? <Blog /> : <Navigate to="/login" />} />
         <Route path="/post/:id" element={user ? <PostDetail /> : <Navigate to="/login" />} />
         <Route path="/new-post" element={user ? <NewPost /> : <Navigate to="/login" />} />
+        <Route
+          path="/profile"
+          element={
+            user
+              ? (!user.username || !user.avatar)
+                ? <Navigate to="/profile/edit" />
+                : <Profile />
+              : <Navigate to="/login" />
+          }
+        />
         <Route path="/profile/edit" element={user ? <EditProfile /> : <Navigate to="/login" />} />
       </Routes>
     </BrowserRouter>

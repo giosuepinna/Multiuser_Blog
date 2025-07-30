@@ -43,12 +43,14 @@ const EditProfile = () => {
     }
   };
 
+  const avatarToPreview = avatar?.trim() !== "" ? avatar : "https://i.imgur.com/default.png";
+
   return (
     <div style={{ padding: "2rem" }}>
       <h2>Modifica Profilo</h2>
       <form onSubmit={handleSubmit}>
         <div>
-          <label>Username:</label>{" "}
+          <label>Username:</label>
           <input
             type="text"
             value={username}
@@ -57,28 +59,30 @@ const EditProfile = () => {
           />
         </div>
         <div>
-          <label>Avatar (URL Immagine):</label>{" "}
+          <label>Avatar (URL Immagine):</label>
           <input
             type="text"
             value={avatar}
             onChange={(e) => setAvatar(e.target.value)}
-            placeholder="https://..."
+            placeholder="https://i.imgur.com/default.png"
           />
         </div>
-        {avatar && (
-          <div style={{ marginTop: "1rem" }}>
-            <label>Anteprima avatar:</label>
-            <div>
-              <img
-                src={avatar}
-                alt="Avatar Preview"
-                width="100"
-                height="100"
-                style={{ borderRadius: "50%" }}
-              />
-            </div>
+        <div style={{ marginTop: "1rem" }}>
+          <label>Anteprima avatar:</label>
+          <div>
+            <img
+              src={avatarToPreview}
+              alt="Avatar Preview"
+              width="100"
+              height="100"
+              style={{ borderRadius: "50%", objectFit: "cover" }}
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = "https://i.imgur.com/default.png";
+              }}
+            />
           </div>
-        )}
+        </div>
         <div style={{ marginTop: "1rem" }}>
           <button type="submit">Salva modifiche</button>
           <button type="button" onClick={() => navigate("/")}>
@@ -86,7 +90,12 @@ const EditProfile = () => {
           </button>
         </div>
         {message && (
-          <p style={{ marginTop: "1rem", color: message.includes("✅") ? "green" : "red" }}>
+          <p
+            style={{
+              marginTop: "1rem",
+              color: message.includes("✅") ? "green" : "red",
+            }}
+          >
             {message}
           </p>
         )}
