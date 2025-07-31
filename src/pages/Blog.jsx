@@ -5,16 +5,18 @@ import PostCard from "../components/PostCard";
 
 const Blog = () => {
   const { user } = useAuth();
-  const socket = useSocket();
+  const socket = useSocket()?.socket;
+
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Carica i post all'avvio
   useEffect(() => {
     const fetchPosts = async () => {
       try {
         const res = await fetch("https://todo-pp.longwavestudio.dev/posts", {
           headers: {
-            Authorization: `Bearer ${user.accessToken}`,
+            Authorization: `Bearer ${user?.accessToken}`,
             "Content-Type": "application/json",
           },
         });
@@ -40,12 +42,13 @@ const Blog = () => {
     }
   }, [user]);
 
+  // Ascolta nuovi post via WebSocket
   useEffect(() => {
     if (!socket) return;
 
     const addNewPost = (newPost) => {
       setPosts((prev) => {
-        const exists = prev.some((post) => post._id === newPost._id);
+        const exists = prev.some((post) => post._id === newPost._id || post.id === newPost.id);
         if (exists) return prev;
         return [newPost, ...prev];
       });
@@ -60,13 +63,18 @@ const Blog = () => {
     };
   }, [socket]);
 
+  // Aggiunge un post finto (per test)
   const addFakePost = () => {
     const fakePost = {
       _id: Date.now().toString(),
       title: "Post di test",
       content: "Questo è un post generato localmente.",
-      author: user.email,
+      publishDate: new Date().toISOString(),
       tags: ["test"],
+      author: {
+        username: user?.username || user?.email || "anonimo",
+        email: user?.email || "nessuno@email.com",
+      },
     };
     setPosts((prev) => [fakePost, ...prev]);
   };
@@ -75,12 +83,15 @@ const Blog = () => {
     <div>
       <h2>Blog</h2>
       <button onClick={addFakePost}>➕ Aggiungi post</button>
+
       {loading ? (
         <p>Caricamento...</p>
       ) : posts.length === 0 ? (
         <p>Nessun post disponibile.</p>
       ) : (
-        posts.map((post) => <PostCard key={post._id} post={post} />)
+        posts.map((post) => (
+          <PostCard key={post._id || post.id} post={post} />
+        ))
       )}
     </div>
   );

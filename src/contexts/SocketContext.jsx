@@ -1,10 +1,44 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import getSocket, { connectSocket } from "../socket";
+import { io } from "socket.io-client";
 import { useAuth } from "./AuthContext";
 
 const SocketContext = createContext(null);
 
 export const useSocket = () => useContext(SocketContext);
+
+let socket;
+
+const connectSocket = (token) => {
+  if (!token) return;
+
+  if (socket) {
+    socket.disconnect();
+    console.log("🔌 Disconnetto socket.");
+  }
+
+  console.log("🔌 Connetto socket con token:", token);
+
+  socket = io("https://todo-pp.longwavestudio.dev", {
+    transports: ["websocket"],
+    auth: {
+      token: `Bearer ${token}`,
+    },
+  });
+
+  socket.on("connect", () => {
+    console.log("✅ Socket connesso:", socket.id);
+  });
+
+  socket.on("connect_error", (err) => {
+    console.error("❌ Errore connessione socket:", err.message);
+  });
+
+  socket.onAny((event, ...args) => {
+    console.log("📡 [socket.onAny] Evento ricevuto:", event, ...args);
+  });
+
+  return socket;
+};
 
 export const SocketProvider = ({ children }) => {
   const { user } = useAuth();
@@ -12,30 +46,11 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     if (user?.accessToken) {
-      console.log("🔌 Connetto socket con token:", user.accessToken);
-      connectSocket(user.accessToken);
-
-      const socket = getSocket();
-
-      if (socket) {
-        // Log globale per ogni evento ricevuto
-        socket.onAny((event, ...args) => {
-          console.log("📡 [socket.onAny] Evento ricevuto:", event, ...args);
-        });
-
-        // Log specifico per il post creato
-        socket.on("POST_CREATED", (data) => {
-          console.log("🆕 Evento POST_CREATED ricevuto:", data);
-        });
-
-        setSocketInstance(socket);
-      }
-    } else {
-      console.warn("⚠️ Nessun accessToken disponibile per il socket.");
+      const newSocket = connectSocket(user.accessToken);
+      setSocketInstance(newSocket);
     }
 
     return () => {
-      const socket = getSocket();
       if (socket) {
         console.log("🔌 Disconnetto socket.");
         socket.disconnect();
@@ -44,7 +59,7 @@ export const SocketProvider = ({ children }) => {
   }, [user?.accessToken]);
 
   return (
-    <SocketContext.Provider value={socketInstance}>
+    <SocketContext.Provider value={{ socket: socketInstance }}>
       {children}
     </SocketContext.Provider>
   );

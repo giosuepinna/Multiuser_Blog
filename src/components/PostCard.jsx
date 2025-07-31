@@ -1,28 +1,21 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 const PostCard = ({ post }) => {
+  const postId = post._id || post.id; // ✅ compatibilità con _id o id
+
   const {
-    _id,
     title,
     content,
     publishDate,
-    authorId,
     tags = [],
+    author = {},
   } = post;
-
-  const navigate = useNavigate();
 
   const [liked, setLiked] = useState(false);
   const [visible, setVisible] = useState(true);
   const [editing, setEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(content);
-
-  const handleCardClick = () => {
-    if (!editing) {
-      navigate(`/post/${_id}`, { state: { post } });
-    }
-  };
 
   const toggleLike = (e) => {
     e.stopPropagation();
@@ -50,28 +43,31 @@ const PostCard = ({ post }) => {
   if (!visible) return null;
 
   return (
-    <div onClick={handleCardClick} style={styles.card}>
-      <h2>{title}</h2>
-      <p style={styles.meta}>
-        scritto da <strong>{authorId}</strong> il{" "}
-        {new Date(publishDate).toLocaleDateString()}
-      </p>
+    <div style={styles.card}>
+      <Link to={`/post/${postId}`} style={styles.linkWrapper}>
+        <h2>{title}</h2>
+        <p style={styles.meta}>
+          scritto da <strong>{author.username || author.email || "Anonimo"}</strong> il{" "}
+          {publishDate ? new Date(publishDate).toLocaleDateString() : "?"}
+        </p>
 
-      {editing ? (
-        <textarea
-          value={editedContent}
-          onClick={(e) => e.stopPropagation()}
-          onChange={(e) => setEditedContent(e.target.value)}
-          rows={4}
-          style={styles.textarea}
-        />
-      ) : (
-        <p>{editedContent}</p>
-      )}
+        {editing ? (
+          <textarea
+            value={editedContent}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => setEditedContent(e.target.value)}
+            rows={4}
+            style={styles.textarea}
+          />
+        ) : (
+          <p>{editedContent}</p>
+        )}
 
-      {tags.length > 0 && (
-        <p style={styles.tags}>Tag: {tags.join(", ")}</p>
-      )}
+        {tags.length > 0 && (
+          <p style={styles.tags}>Tag: {tags.join(", ")}</p>
+        )}
+        <p style={styles.readMore}>Leggi di più →</p>
+      </Link>
 
       <div style={styles.actions}>
         <button onClick={toggleLike} style={styles.likeBtn}>
@@ -90,8 +86,6 @@ const PostCard = ({ post }) => {
           🗑 Elimina
         </button>
       </div>
-
-      <p style={styles.readMore}>Leggi di più →</p>
     </div>
   );
 };
@@ -104,7 +98,12 @@ const styles = {
     marginBottom: "1rem",
     backgroundColor: "#f9f9f9",
     transition: "box-shadow 0.2s ease",
+  },
+  linkWrapper: {
+    textDecoration: "none",
+    color: "inherit",
     cursor: "pointer",
+    display: "block",
   },
   meta: {
     color: "#555",
