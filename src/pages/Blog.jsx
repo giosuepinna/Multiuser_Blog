@@ -5,7 +5,7 @@ import PostCard from "../components/PostCard";
 
 const Blog = () => {
   const { user } = useAuth();
-  const socket = useSocket()?.socket;
+  const { socket, lastPostUpdated } = useSocket();
 
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,69 +30,35 @@ const Blog = () => {
 
         setPosts(formattedPosts);
       } catch (error) {
-        console.error("Errore nel caricamento post:", error);
-        setPosts([]);
+        console.error("Errore nel caricamento dei post:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    if (user?.accessToken) {
-      fetchPosts();
-    }
+    fetchPosts();
   }, [user]);
 
-  // Ascolta nuovi post via WebSocket
+  // 🔁 Aggiorna il numero di commenti in tempo reale
   useEffect(() => {
-    if (!socket) return;
+    if (!lastPostUpdated) return;
 
-    const addNewPost = (newPost) => {
-      setPosts((prev) => {
-        const exists = prev.some((post) => post._id === newPost._id || post.id === newPost.id);
-        if (exists) return prev;
-        return [newPost, ...prev];
-      });
-    };
+    setPosts((prevPosts) =>
+      prevPosts.map((post) =>
+        post._id === lastPostUpdated._id
+          ? { ...post, total_comments: lastPostUpdated.total_comments }
+          : post
+      )
+    );
+  }, [lastPostUpdated]);
 
-    socket.on("POST_CREATED", addNewPost);
-    socket.on("POST_SHARED", addNewPost);
-
-    return () => {
-      socket.off("POST_CREATED", addNewPost);
-      socket.off("POST_SHARED", addNewPost);
-    };
-  }, [socket]);
-
-  // Aggiunge un post finto (per test)
-  const addFakePost = () => {
-    const fakePost = {
-      _id: Date.now().toString(),
-      title: "Post di test",
-      content: "Questo è un post generato localmente.",
-      publishDate: new Date().toISOString(),
-      tags: ["test"],
-      author: {
-        username: user?.username || user?.email || "anonimo",
-        email: user?.email || "nessuno@email.com",
-      },
-    };
-    setPosts((prev) => [fakePost, ...prev]);
-  };
+  if (loading) return <p>Caricamento...</p>;
 
   return (
-    <div>
-      <h2>Blog</h2>
-      <button onClick={addFakePost}>➕ Aggiungi post</button>
-
-      {loading ? (
-        <p>Caricamento...</p>
-      ) : posts.length === 0 ? (
-        <p>Nessun post disponibile.</p>
-      ) : (
-        posts.map((post) => (
-          <PostCard key={post._id || post.id} post={post} />
-        ))
-      )}
+    <div className="space-y-4 p-4">
+      {posts.map((post) => (
+        <PostCard key={post._id} post={post} />
+      ))}
     </div>
   );
 };

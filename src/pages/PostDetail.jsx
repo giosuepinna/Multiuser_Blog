@@ -5,7 +5,7 @@ import { useAuth } from "../contexts/AuthContext";
 
 const PostDetail = () => {
   const { id } = useParams();
-  const { socket } = useSocket();
+  const { socket, lastPostUpdated } = useSocket();
   const { user } = useAuth();
 
   const [post, setPost] = useState(null);
@@ -70,7 +70,7 @@ const PostDetail = () => {
     };
   }, [socket]);
 
-  // ✅ Invia commento + fallback
+  // ✅ Invia commento + fallback + aggiornamento conteggio
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!newComment.trim()) return;
@@ -89,6 +89,12 @@ const PostDetail = () => {
     };
     setComments((prev) => [...prev, tempComment]);
 
+    // 🔁 Aggiorna anche il conteggio locale
+    setPost((prev) => ({
+      ...prev,
+      total_comments: (prev?.total_comments ?? comments.length) + 1,
+    }));
+
     socket.emit("CREATE_COMMENT", payload, (response) => {
       console.log("✅ Risposta dal server:", response);
       if (response?.success && response.data) {
@@ -102,12 +108,23 @@ const PostDetail = () => {
     setNewComment("");
   };
 
+  // ✅ Aggiorna total_comments se arriva da socket
+  useEffect(() => {
+    if (!lastPostUpdated || lastPostUpdated._id !== id) return;
+
+    setPost((prev) => ({
+      ...prev,
+      total_comments: lastPostUpdated.total_comments,
+    }));
+  }, [lastPostUpdated, id]);
+
   if (!post) return <p>Caricamento...</p>;
 
   return (
     <div className="container">
       <h2>{post.title}</h2>
       <p>{post.content}</p>
+      <p><strong>Commenti totali:</strong> {post.total_comments ?? comments.length}</p>
 
       <hr />
 

@@ -33,8 +33,12 @@ const connectSocket = (token) => {
     console.error("❌ Errore connessione socket:", err.message);
   });
 
+  // 🎯 Log avanzato di tutti gli eventi socket ricevuti
   socket.onAny((event, ...args) => {
-    console.log("📡 [socket.onAny] Evento ricevuto:", event, ...args);
+    console.log("📡 SOCKET EVENTO RICEVUTO -->", event);
+    if (args.length > 0) {
+      console.log("📦 Contenuto evento:", args[0]);
+    }
   });
 
   return socket;
@@ -43,6 +47,7 @@ const connectSocket = (token) => {
 export const SocketProvider = ({ children }) => {
   const { user } = useAuth();
   const [socketInstance, setSocketInstance] = useState(null);
+  const [lastPostUpdated, setLastPostUpdated] = useState(null);
 
   useEffect(() => {
     if (user?.accessToken) {
@@ -58,8 +63,24 @@ export const SocketProvider = ({ children }) => {
     };
   }, [user?.accessToken]);
 
+  // 🎯 Listener per POST_UPDATED
+  useEffect(() => {
+    if (!socketInstance) return;
+
+    const handlePostUpdated = (data) => {
+      console.log("📩 POST_UPDATED ARRIVATO:", data);
+      setLastPostUpdated(data);
+    };
+
+    socketInstance.on("POST_UPDATED", handlePostUpdated);
+
+    return () => {
+      socketInstance.off("POST_UPDATED", handlePostUpdated);
+    };
+  }, [socketInstance]);
+
   return (
-    <SocketContext.Provider value={{ socket: socketInstance }}>
+    <SocketContext.Provider value={{ socket: socketInstance, lastPostUpdated }}>
       {children}
     </SocketContext.Provider>
   );
