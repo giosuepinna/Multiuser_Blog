@@ -1,91 +1,137 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { useSocket } from "../contexts/SocketContext";
+import { useAuth } from "../contexts/AuthContext";
 
 const PostDetail = () => {
   const { id } = useParams();
+  const { socket } = useSocket();
+  const { user } = useAuth();
+
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
-  const [loadingPost, setLoadingPost] = useState(true);
-  const [loadingComments, setLoadingComments] = useState(true);
+  const [newComment, setNewComment] = useState("");
 
+  // ✅ Carica post via REST
   useEffect(() => {
     const fetchPost = async () => {
       try {
-        const res = await fetch(`https://todo-pp.longwavestudio.dev/posts/${id}`);
-        const data = await res.json();
+        const response = await fetch(
+          `https://todo-pp.longwavestudio.dev/posts/${id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${user.accessToken}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        if (!response.ok) throw new Error("Errore caricamento post");
+        const data = await response.json();
         setPost(data);
-      } catch (err) {
-        console.error("❌ Errore caricamento post:", err);
-        setPost(null);
-      } finally {
-        setLoadingPost(false);
+      } catch (error) {
+        console.error("Errore nel fetch del post:", error);
       }
     };
 
-    const fetchComments = async () => {
-      try {
-        const res = await fetch(`https://todo-pp.longwavestudio.dev/posts/${id}/comments`);
-        const data = await res.json();
-        setComments(Array.isArray(data) ? data : []);
-      } catch (err) {
-        console.error("❌ Errore caricamento commenti:", err);
-        setComments([]);
-      } finally {
-        setLoadingComments(false);
-      }
+    if (id && user?.accessToken) {
+      fetchPost();
+    }
+  }, [id, user?.accessToken]);
+
+  // ✅ Richiedi commenti via socket
+  useEffect(() => {
+    if (socket && id) {
+      socket.emit("get-comments", { postId: id });
+    }
+  }, [socket, id]);
+
+  // ✅ Gestione commenti ricevuti
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleComments = (data) => {
+      console.log("📥 Lista commenti ricevuta:", data);
+      setComments(data);
     };
 
-    fetchPost();
-    fetchComments();
-  }, [id]);
+    const handleNewComment = (data) => {
+      console.log("📩 Nuovo commento ricevuto:", data);
+      setComments((prev) => [...prev, data]);
+    };
+
+    socket.on("comments", handleComments);
+    socket.on("COMMENT_CREATED", handleNewComment);
+    socket.on("COMMENT_SHARED", handleNewComment);
+
+    return () => {
+      socket.off("comments", handleComments);
+      socket.off("COMMENT_CREATED", handleNewComment);
+      socket.off("COMMENT_SHARED", handleNewComment);
+    };
+  }, [socket]);
+
+  // ✅ Invia commento + fallback
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!newComment.trim()) return;
+
+    const text = newComment.trim();
+    const payload = {
+      postId: id,
+      text,
+    };
+
+    // Mostra commento immediatamente in UI
+    const tempComment = {
+      _id: Date.now().toString(),
+      text,
+      authorUsername: user.username || "Tu",
+    };
+    setComments((prev) => [...prev, tempComment]);
+
+    socket.emit("CREATE_COMMENT", payload, (response) => {
+      console.log("✅ Risposta dal server:", response);
+      if (response?.success && response.data) {
+        // aggiorna commento fittizio con quello reale
+        setComments((prev) =>
+          prev.map((c) => (c._id === tempComment._id ? response.data : c))
+        );
+      }
+    });
+
+    setNewComment("");
+  };
+
+  if (!post) return <p>Caricamento...</p>;
 
   return (
-    <div style={styles.container}>
-      {loadingPost ? (
-        <p style={styles.loading}>Caricamento post...</p>
-      ) : post ? (
-        <>
-          <h2>{post.title}</h2>
-          <p>{post.content}</p>
-        </>
-      ) : (
-        <p style={styles.loading}>Post non trovato.</p>
-      )}
+    <div className="container">
+      <h2>{post.title}</h2>
+      <p>{post.content}</p>
 
-      <h3 style={{ marginTop: "2rem" }}>Commenti:</h3>
-      {loadingComments ? (
-        <p style={styles.loading}>Caricamento commenti...</p>
-      ) : comments.length === 0 ? (
-        <p>Nessun commento ancora.</p>
-      ) : (
-        comments.map((comment) => (
-          <div key={comment._id || comment.id} style={styles.comment}>
-            <strong>{comment.authorUsername || "Anonimo"}:</strong> {comment.text}
-          </div>
-        ))
-      )}
+      <hr />
+
+      <h3>Commenti</h3>
+      <ul>
+        {comments.map((c) => (
+          <li key={c._id}>
+            <strong>{c.authorUsername}</strong>: {c.text}
+          </li>
+        ))}
+      </ul>
+
+      <form onSubmit={handleSubmit}>
+        <textarea
+          rows={3}
+          value={newComment}
+          onChange={(e) => setNewComment(e.target.value)}
+          placeholder="Scrivi un commento..."
+          required
+        />
+        <button type="submit">Invia</button>
+      </form>
     </div>
   );
-};
-
-const styles = {
-  container: {
-    maxWidth: "800px",
-    margin: "2rem auto",
-    padding: "2rem",
-    backgroundColor: "#f9f9f9",
-    borderRadius: "8px",
-    boxShadow: "0 0 10px rgba(0,0,0,0.1)",
-    minHeight: "70vh",
-  },
-  comment: {
-    borderTop: "1px solid #ccc",
-    padding: "0.5rem 0",
-  },
-  loading: {
-    fontStyle: "italic",
-    color: "#555",
-  },
 };
 
 export default PostDetail;
