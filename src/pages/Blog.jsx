@@ -1,98 +1,83 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useSocket } from "../contexts/SocketContext";
 import PostCard from "../components/PostCard";
+import { useSearchParams, useNavigate } from "react-router-dom";
 
 const Blog = () => {
   const { user } = useAuth();
-  const socket = useSocket()?.socket;
-
+  const { socket } = useSocket();
   const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
-  // Carica i post all'avvio
+  const selectedTag = searchParams.get("tag");
+
   useEffect(() => {
     const fetchPosts = async () => {
       try {
         const res = await fetch("https://todo-pp.longwavestudio.dev/posts", {
           headers: {
-            Authorization: `Bearer ${user?.accessToken}`,
+            Authorization: `Bearer ${user.accessToken}`,
             "Content-Type": "application/json",
           },
         });
 
         const data = await res.json();
-        const formattedPosts = Array.isArray(data)
-          ? data
-          : Array.isArray(data.posts)
-          ? data.posts
-          : [];
+        console.log("📥 Post ricevuti:", data);
 
-        setPosts(formattedPosts);
-      } catch (error) {
-        console.error("Errore nel caricamento post:", error);
-        setPosts([]);
-      } finally {
-        setLoading(false);
+        if (Array.isArray(data.posts)) {
+          setPosts(data.posts);
+        } else {
+          throw new Error("Formato dati non valido");
+        }
+      } catch (err) {
+        console.log("❌ Errore:", err);
+        setError(err.message || "Errore nel caricamento dei post");
       }
     };
 
     if (user?.accessToken) {
       fetchPosts();
     }
-  }, [user]);
+  }, [user?.accessToken]);
 
-  // Ascolta nuovi post via WebSocket
-  useEffect(() => {
-    if (!socket) return;
-
-    const addNewPost = (newPost) => {
-      setPosts((prev) => {
-        const exists = prev.some((post) => post._id === newPost._id || post.id === newPost.id);
-        if (exists) return prev;
-        return [newPost, ...prev];
-      });
-    };
-
-    socket.on("POST_CREATED", addNewPost);
-    socket.on("POST_SHARED", addNewPost);
-
-    return () => {
-      socket.off("POST_CREATED", addNewPost);
-      socket.off("POST_SHARED", addNewPost);
-    };
-  }, [socket]);
-
-  // Aggiunge un post finto (per test)
-  const addFakePost = () => {
-    const fakePost = {
-      _id: Date.now().toString(),
-      title: "Post di test",
-      content: "Questo è un post generato localmente.",
-      publishDate: new Date().toISOString(),
-      tags: ["test"],
-      author: {
-        username: user?.username || user?.email || "anonimo",
-        email: user?.email || "nessuno@email.com",
-      },
-    };
-    setPosts((prev) => [fakePost, ...prev]);
+  const handleTagClick = (tag) => {
+    setSearchParams({ tag });
   };
 
-  return (
-    <div>
-      <h2>Blog</h2>
-      <button onClick={addFakePost}>➕ Aggiungi post</button>
+  const handleResetFilter = () => {
+    setSearchParams({});
+  };
 
-      {loading ? (
-        <p>Caricamento...</p>
-      ) : posts.length === 0 ? (
-        <p>Nessun post disponibile.</p>
-      ) : (
-        posts.map((post) => (
-          <PostCard key={post._id || post.id} post={post} />
-        ))
+  const filteredPosts = selectedTag
+    ? posts.filter((post) => post.tags?.includes(selectedTag))
+    : posts;
+
+  if (error) return <p style={{ padding: "2rem", color: "red" }}>❌ {error}</p>;
+
+  return (
+    <div className="container mx-auto p-4">
+      <h2 className="text-2xl font-bold mb-4">Ultimi post</h2>
+
+      {selectedTag && (
+        <div className="mb-4">
+          <p className="mb-2">
+            🔍 Post con tag: <strong>{selectedTag}</strong>
+          </p>
+          <button
+            onClick={handleResetFilter}
+            className="bg-gray-300 hover:bg-gray-400 text-black font-bold py-1 px-3 rounded"
+          >
+            Tutti i post
+          </button>
+        </div>
       )}
+
+      {filteredPosts.map((post) => (
+        <PostCard key={post.id} post={post} onTagClick={handleTagClick} />
+      ))}
     </div>
   );
 };
