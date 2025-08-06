@@ -19,23 +19,34 @@ const PostForm = () => {
       return;
     }
 
-    console.log("👤 user:", user);
-
     const newPost = {
-      userId: user.sub,
-      author: user.email,
       title,
       content,
-      tags: tags.split(",").map((t) => t.trim()),
+      publishDate: Date.now(),
+      authorId: user.sub,
+      userIds: [user.sub],
+      image: "",
+      tags: tags
+        .split(",")
+        .map((t) => t.trim())
+        .filter((t) => t.length > 0),
     };
 
     console.log("📤 Invio evento CREATE_POST:", newPost);
-    socket.emit("CREATE_POST", newPost);
 
-    setMessage("✅ Post inviato!");
-    setTitle("");
-    setContent("");
-    setTags("");
+    socket.emit("CREATE_POST", newPost, (response) => {
+      // callback per gestire la risposta se backend la invia
+      if (response && response.success) {
+        setMessage("✅ Post creato con successo!");
+        setTitle("");
+        setContent("");
+        setTags("");
+      } else if (response && response.error) {
+        setMessage(`❌ Errore: ${response.error.message || "Generico"}`);
+      } else {
+        setMessage("✅ Post inviato!");
+      }
+    });
   };
 
   return (
@@ -67,4 +78,3 @@ const PostForm = () => {
 };
 
 export default PostForm;
-

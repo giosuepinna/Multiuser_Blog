@@ -1,83 +1,66 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { useSocket } from "../contexts/SocketContext";
-import PostCard from "../components/PostCard";
-import { useSearchParams, useNavigate } from "react-router-dom";
 
 const Blog = () => {
-  const { user } = useAuth();
-  const { socket } = useSocket();
+  const { userId, accessToken } = useAuth();
   const [posts, setPosts] = useState([]);
-  const [error, setError] = useState("");
-  const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
-
-  const selectedTag = searchParams.get("tag");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!accessToken) return;
+
     const fetchPosts = async () => {
       try {
-        const res = await fetch("https://todo-pp.longwavestudio.dev/posts", {
+        const response = await fetch("https://todo-pp.longwavestudio.dev/posts", {
           headers: {
-            Authorization: `Bearer ${user.accessToken}`,
+            Authorization: `Bearer ${accessToken}`,
             "Content-Type": "application/json",
           },
         });
 
-        const data = await res.json();
-        console.log("📥 Post ricevuti:", data);
-
-        if (Array.isArray(data.posts)) {
-          setPosts(data.posts);
-        } else {
-          throw new Error("Formato dati non valido");
+        if (!response.ok) {
+          throw new Error("Errore nel caricamento dei post");
         }
-      } catch (err) {
-        console.log("❌ Errore:", err);
-        setError(err.message || "Errore nel caricamento dei post");
+
+        const data = await response.json();
+
+        console.log("userId:", userId);
+        console.log("Post ricevuti:", data.posts);
+
+        const userPosts = data.posts.filter(
+          (post) =>
+            post.authorId?.toLowerCase().trim() === userId?.toLowerCase().trim()
+        );
+
+        console.log("Post filtrati per userId:", userPosts);
+
+        setPosts(userPosts);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    if (user?.accessToken) {
-      fetchPosts();
-    }
-  }, [user?.accessToken]);
+    fetchPosts();
+  }, [accessToken, userId]);
 
-  const handleTagClick = (tag) => {
-    setSearchParams({ tag });
-  };
+  if (loading) return <p>Caricamento post...</p>;
 
-  const handleResetFilter = () => {
-    setSearchParams({});
-  };
-
-  const filteredPosts = selectedTag
-    ? posts.filter((post) => post.tags?.includes(selectedTag))
-    : posts;
-
-  if (error) return <p style={{ padding: "2rem", color: "red" }}>❌ {error}</p>;
+  if (posts.length === 0) return <p>Nessun post disponibile.</p>;
 
   return (
-    <div className="container mx-auto p-4">
-      <h2 className="text-2xl font-bold mb-4">Ultimi post</h2>
-
-      {selectedTag && (
-        <div className="mb-4">
-          <p className="mb-2">
-            🔍 Post con tag: <strong>{selectedTag}</strong>
-          </p>
-          <button
-            onClick={handleResetFilter}
-            className="bg-gray-300 hover:bg-gray-400 text-black font-bold py-1 px-3 rounded"
-          >
-            Tutti i post
-          </button>
-        </div>
-      )}
-
-      {filteredPosts.map((post) => (
-        <PostCard key={post.id} post={post} onTagClick={handleTagClick} />
-      ))}
+    <div>
+      <h1>I tuoi post</h1>
+      <ul>
+        {posts.map((post) => (
+          <li key={post.id}>
+            <h2>{post.title}</h2>
+            <p dangerouslySetInnerHTML={{ __html: post.content }} />
+            {/* Aggiungi bottoni Modifica/Elimina se vuoi */}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 };
