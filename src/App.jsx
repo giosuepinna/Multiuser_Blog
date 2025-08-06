@@ -6,12 +6,11 @@ import Register from "./pages/Register";
 import EditProfile from "./pages/EditProfile";
 import PostDetail from "./pages/PostDetail";
 import CreatePost from "./pages/CreatePost";
-import UserPosts from "./pages/UserPosts"; // ✅ nuovo import
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { SocketProvider } from "./contexts/SocketContext";
 import Nav from "./components/Nav";
 
-// ✅ Componente per route protette
+// Componente per route protette
 const PrivateRoute = ({ children }) => {
   const { user } = useAuth();
   return user ? children : <Navigate to="/login" />;
@@ -58,14 +57,7 @@ const App = () => {
                 </PrivateRoute>
               }
             />
-            <Route
-              path="/user/:id" // ✅ nuova rotta autore
-              element={
-                <PrivateRoute>
-                  <UserPosts />
-                </PrivateRoute>
-              }
-            />
+            {/* La rotta /user/:id con UserPosts è stata rimossa perché il componente non esiste */}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </Router>
