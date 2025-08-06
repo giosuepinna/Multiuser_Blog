@@ -9,6 +9,8 @@ import ActivationPage from "../pages/ActivationPage";
 import CreatePost from "../pages/CreatePost";
 import ProfileEdit from "../components/ProfileEdit";
 import Profile from "../pages/Profile";
+import NewPost from "../pages/NewPost";
+import PostManager from "../pages/PostManager";
 
 const Router = () => {
   return (
@@ -24,6 +26,8 @@ const Router = () => {
         <Route path="/profile/edit" element={<ProfileEdit />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/test" element={<div>TEST ROUTE FUNZIONANTE</div>} />
+        <Route path="/new-post" element={<NewPost />} />
+        <Route path="/manage-posts" element={<PostManager />} />
       </Routes>
     </BrowserRouter>
   );

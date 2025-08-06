@@ -1,66 +1,121 @@
-import React, { useEffect, useState } from "react";
-import { useAuth } from "../contexts/AuthContext";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+const initialPosts = [
+  {
+    id: "1",
+    title: "Prova post",
+    content:
+      "<p>Lorem ipsum dolor sit amet, consectetur adipisci elit, sed eiusmod tempor incidunt ut labore et dolore magna aliqua.</p>",
+    likes: 0,
+    liked: false,
+    comments: [],
+  },
+];
 
 const Blog = () => {
-  const { userId, accessToken } = useAuth();
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [posts, setPosts] = useState(initialPosts);
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!accessToken) return;
-
-    const fetchPosts = async () => {
-      try {
-        const response = await fetch("https://todo-pp.longwavestudio.dev/posts", {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Errore nel caricamento dei post");
+  const toggleLike = (postId) => {
+    setPosts((prevPosts) =>
+      prevPosts.map((post) => {
+        if (post.id === postId) {
+          const liked = post.liked ? false : true;
+          const likes = liked ? post.likes + 1 : post.likes - 1;
+          return { ...post, likes, liked };
         }
+        return post;
+      })
+    );
+  };
 
-        const data = await response.json();
-
-        console.log("userId:", userId);
-        console.log("Post ricevuti:", data.posts);
-
-        const userPosts = data.posts.filter(
-          (post) =>
-            post.authorId?.toLowerCase().trim() === userId?.toLowerCase().trim()
-        );
-
-        console.log("Post filtrati per userId:", userPosts);
-
-        setPosts(userPosts);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPosts();
-  }, [accessToken, userId]);
-
-  if (loading) return <p>Caricamento post...</p>;
-
-  if (posts.length === 0) return <p>Nessun post disponibile.</p>;
+  const addComment = (postId, text) => {
+    if (!text) return;
+    setPosts((prevPosts) =>
+      prevPosts.map((post) => {
+        if (post.id === postId) {
+          const newComment = {
+            id: Math.random().toString(36).substr(2, 9),
+            author: "giosuepinna92",
+            text,
+          };
+          return { ...post, comments: [...post.comments, newComment] };
+        }
+        return post;
+      })
+    );
+  };
 
   return (
-    <div>
+    <div style={{ maxWidth: "700px", margin: "2rem auto" }}>
       <h1>I tuoi post</h1>
-      <ul>
-        {posts.map((post) => (
-          <li key={post.id}>
-            <h2>{post.title}</h2>
-            <p dangerouslySetInnerHTML={{ __html: post.content }} />
-            {/* Aggiungi bottoni Modifica/Elimina se vuoi */}
-          </li>
+      {posts.map((post) => (
+        <PostCard
+          key={post.id}
+          post={post}
+          onToggleLike={() => toggleLike(post.id)}
+          onAddComment={addComment}
+          onClick={() => navigate(`/edit-post/${post.id}`)}
+        />
+      ))}
+    </div>
+  );
+};
+
+const PostCard = ({ post, onToggleLike, onAddComment, onClick }) => {
+  const [commentText, setCommentText] = useState("");
+
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        border: "1px solid #ddd",
+        borderRadius: "8px",
+        padding: "1rem",
+        marginBottom: "1rem",
+        backgroundColor: "#fff",
+        cursor: "pointer",
+      }}
+    >
+      <h2>{post.title}</h2>
+      <div dangerouslySetInnerHTML={{ __html: post.content }} />
+      <div style={{ marginTop: "1rem" }}>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleLike();
+          }}
+          style={{ marginRight: "1rem" }}
+        >
+          {post.liked ? "💔 Dislike" : "❤️ Like"} ({post.likes})
+        </button>
+      </div>
+      <div style={{ marginTop: "1rem" }}>
+        <h4>Commenti</h4>
+        {post.comments.map((c) => (
+          <p key={c.id}>
+            <strong>{c.author}:</strong> {c.text}
+          </p>
         ))}
-      </ul>
+        <input
+          type="text"
+          placeholder="Scrivi un commento..."
+          value={commentText}
+          onChange={(e) => setCommentText(e.target.value)}
+          style={{ width: "80%", marginRight: "0.5rem" }}
+          onClick={(e) => e.stopPropagation()}
+        />
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddComment(post.id, commentText);
+            setCommentText("");
+          }}
+        >
+          Invia
+        </button>
+      </div>
     </div>
   );
 };

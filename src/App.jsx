@@ -10,6 +10,9 @@ import CreatePost from "./pages/CreatePost";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { SocketProvider } from "./contexts/SocketContext";
 import Nav from "./components/Nav";
+import EditPost from "./pages/EditPost";
+
+
 
 const PrivateRoute = ({ children }) => {
   const { user } = useAuth();
@@ -65,6 +68,14 @@ const App = () => {
                 </PrivateRoute>
               }
             />
+            <Route
+              path="/edit-post/:id"
+              element={
+                 <PrivateRoute>
+                  <EditPost />
+                 </PrivateRoute>
+               }
+             />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </Router>

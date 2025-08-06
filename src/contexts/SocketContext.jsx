@@ -9,7 +9,7 @@ export const useSocket = () => useContext(SocketContext);
 let socket;
 
 const connectSocket = (token) => {
-  if (!token) return;
+  if (!token) return null;
 
   if (socket) {
     socket.disconnect();
@@ -18,7 +18,7 @@ const connectSocket = (token) => {
 
   console.log("🔌 Connetto socket con token:", token);
 
-  socket = io("https://todo-pp.longwavestudio.dev", {
+  socket = io("https://todo-pp.longwavestudio.dev/", { // <- ATTENZIONE qui, aggiunto /multiuserblog
     transports: ["websocket"],
     auth: {
       token: `Bearer ${token}`,
@@ -33,7 +33,6 @@ const connectSocket = (token) => {
     console.error("❌ Errore connessione socket:", err.message);
   });
 
-  // 🎯 Log avanzato di tutti gli eventi socket ricevuti
   socket.onAny((event, ...args) => {
     console.log("📡 SOCKET EVENTO RICEVUTO -->", event);
     if (args.length > 0) {
@@ -47,40 +46,31 @@ const connectSocket = (token) => {
 export const SocketProvider = ({ children }) => {
   const { user } = useAuth();
   const [socketInstance, setSocketInstance] = useState(null);
-  const [lastPostUpdated, setLastPostUpdated] = useState(null);
 
   useEffect(() => {
     if (user?.accessToken) {
       const newSocket = connectSocket(user.accessToken);
       setSocketInstance(newSocket);
+    } else {
+      if (socket) {
+        console.log("🔌 Disconnetto socket per mancanza token.");
+        socket.disconnect();
+        socket = null;
+      }
+      setSocketInstance(null);
     }
 
     return () => {
       if (socket) {
-        console.log("🔌 Disconnetto socket.");
+        console.log("🔌 Disconnetto socket (cleanup).");
         socket.disconnect();
+        socket = null;
       }
     };
   }, [user?.accessToken]);
 
-  // 🎯 Listener per POST_UPDATED
-  useEffect(() => {
-    if (!socketInstance) return;
-
-    const handlePostUpdated = (data) => {
-      console.log("📩 POST_UPDATED ARRIVATO:", data);
-      setLastPostUpdated(data);
-    };
-
-    socketInstance.on("POST_UPDATED", handlePostUpdated);
-
-    return () => {
-      socketInstance.off("POST_UPDATED", handlePostUpdated);
-    };
-  }, [socketInstance]);
-
   return (
-    <SocketContext.Provider value={{ socket: socketInstance, lastPostUpdated }}>
+    <SocketContext.Provider value={{ socket: socketInstance }}>
       {children}
     </SocketContext.Provider>
   );

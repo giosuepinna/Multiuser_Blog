@@ -96,7 +96,7 @@ const styles = {
     borderRadius: "8px",
     padding: "1rem",
     marginBottom: "1rem",
-    backgroundColor: "#f9f9f9",
+    backgroundColor: "#cbd5e1",
     transition: "box-shadow 0.2s ease",
   },
   linkWrapper: {
