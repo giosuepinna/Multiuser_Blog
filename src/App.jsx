@@ -3,14 +3,14 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import Blog from "./pages/Blog";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import EditProfile from "./pages/EditProfile";
+import ProfileEdit from "./components/ProfileEdit";   // correggi import
+import Profile from "./pages/Profile";                // aggiungi import
 import PostDetail from "./pages/PostDetail";
 import CreatePost from "./pages/CreatePost";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { SocketProvider } from "./contexts/SocketContext";
 import Nav from "./components/Nav";
 
-// Componente per route protette
 const PrivateRoute = ({ children }) => {
   const { user } = useAuth();
   return user ? children : <Navigate to="/login" />;
@@ -37,7 +37,15 @@ const App = () => {
               path="/profile/edit"
               element={
                 <PrivateRoute>
-                  <EditProfile />
+                  <ProfileEdit />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <PrivateRoute>
+                  <Profile />
                 </PrivateRoute>
               }
             />
@@ -57,7 +65,6 @@ const App = () => {
                 </PrivateRoute>
               }
             />
-            {/* La rotta /user/:id con UserPosts è stata rimossa perché il componente non esiste */}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </Router>

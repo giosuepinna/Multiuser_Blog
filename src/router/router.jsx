@@ -1,6 +1,5 @@
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-
 import Nav from "../components/Nav";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
@@ -8,8 +7,8 @@ import Blog from "../pages/Blog";
 import PostDetail from "../pages/PostDetail";
 import ActivationPage from "../pages/ActivationPage";
 import CreatePost from "../pages/CreatePost";
-
-
+import ProfileEdit from "../components/ProfileEdit";
+import Profile from "../pages/Profile";
 
 const Router = () => {
   return (
@@ -22,6 +21,9 @@ const Router = () => {
         <Route path="/post/:id" element={<PostDetail />} />
         <Route path="/user/activate/:token" element={<ActivationPage />} />
         <Route path="/create-post" element={<CreatePost />} />
+        <Route path="/profile/edit" element={<ProfileEdit />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/test" element={<div>TEST ROUTE FUNZIONANTE</div>} />
       </Routes>
     </BrowserRouter>
   );

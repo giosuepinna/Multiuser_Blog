@@ -17,6 +17,10 @@ const Profile = () => {
           src={user.avatar}
           alt="Avatar"
           style={styles.avatar}
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = "/default-avatar.png"; // fallback locale in public/
+          }}
         />
       )}
 
