@@ -1,119 +1,83 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-const initialPosts = [
-  {
-    id: "1",
-    title: "Prova post",
-    content:
-      "<p>Lorem ipsum dolor sit amet, consectetur adipisci elit, sed eiusmod tempor incidunt ut labore et dolore magna aliqua.</p>",
-    likes: 0,
-    liked: false,
-    comments: [],
-  },
-];
+import { getPosts } from "../services/postService";
 
 const Blog = () => {
-  const [posts, setPosts] = useState(initialPosts);
   const navigate = useNavigate();
+  const [posts, setPosts] = useState([]);
+  const [cursor, setCursor] = useState(null);
+  const [nextCursor, setNextCursor] = useState(null);
+  const [prevCursor, setPrevCursor] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
 
-  const toggleLike = (postId) => {
-    setPosts((prevPosts) =>
-      prevPosts.map((post) => {
-        if (post.id === postId) {
-          const liked = post.liked ? false : true;
-          const likes = liked ? post.likes + 1 : post.likes - 1;
-          return { ...post, likes, liked };
-        }
-        return post;
-      })
-    );
-  };
+  async function load({ cursorArg = "", direction = "next" } = {}) {
+    try {
+      setLoading(true);
+      setErr("");
+      const { posts, nextCursor, prevCursor } = await getPosts({
+        cursor: cursorArg,
+        limit: 10,
+        direction,
+      });
+      setPosts(posts);
+      setNextCursor(nextCursor);
+      setPrevCursor(prevCursor);
+      setCursor(cursorArg || null);
+    } catch (e) {
+      setErr(e?.response?.data?.message || e.message || "Errore nel caricamento post");
+    } finally {
+      setLoading(false);
+    }
+  }
 
-  const addComment = (postId, text) => {
-    if (!text) return;
-    setPosts((prevPosts) =>
-      prevPosts.map((post) => {
-        if (post.id === postId) {
-          const newComment = {
-            id: Math.random().toString(36).substr(2, 9),
-            author: "giosuepinna92",
-            text,
-          };
-          return { ...post, comments: [...post.comments, newComment] };
-        }
-        return post;
-      })
-    );
-  };
+  useEffect(() => {
+    load();
+  }, []);
 
   return (
-    <div style={{ maxWidth: "700px", margin: "2rem auto" }}>
-      <h1>I tuoi post</h1>
+    <div style={{ maxWidth: 800, margin: "2rem auto", padding: "0 1rem" }}>
+      <h1 style={{ marginBottom: "1rem" }}>Post pubblicati</h1>
+
+      {loading && <p>Caricamento...</p>}
+      {err && <p style={{ color: "red" }}>{err}</p>}
+
+      {!loading && posts.length === 0 && <p>Nessun post disponibile.</p>}
+
       {posts.map((post) => (
-        <PostCard
+        <div
           key={post.id}
-          post={post}
-          onToggleLike={() => toggleLike(post.id)}
-          onAddComment={addComment}
-          onClick={() => navigate(`/edit-post/${post.id}`)}
-        />
+          onClick={() => navigate(`/post/${post.id}`)}
+          style={{
+            border: "1px solid #e5e7eb",
+            borderRadius: 12,
+            padding: "1rem",
+            marginBottom: "1rem",
+            background: "#fff",
+            cursor: "pointer",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+          }}
+        >
+          <h2 style={{ margin: "0 0 .5rem 0" }}>{post.title}</h2>
+          <div
+            style={{ color: "#374151" }}
+            dangerouslySetInnerHTML={{ __html: post.content }}
+          />
+          <div style={{ marginTop: ".75rem", fontSize: ".9rem", color: "#6b7280" }}>
+            <span>🗓 {new Date(post.publishDate).toLocaleString()}</span>{" · "}
+            <span>🏷 {post.tags.join(", ") || "nessun tag"}</span>{" · "}
+            <span>❤️ {post.totalLikes}</span>{" · "}
+            <span>💬 {post.totalComments}</span>
+          </div>
+        </div>
       ))}
-    </div>
-  );
-};
 
-const PostCard = ({ post, onToggleLike, onAddComment, onClick }) => {
-  const [commentText, setCommentText] = useState("");
-
-  return (
-    <div
-      onClick={onClick}
-      style={{
-        border: "1px solid #ddd",
-        borderRadius: "8px",
-        padding: "1rem",
-        marginBottom: "1rem",
-        backgroundColor: "#fff",
-        cursor: "pointer",
-      }}
-    >
-      <h2>{post.title}</h2>
-      <div dangerouslySetInnerHTML={{ __html: post.content }} />
-      <div style={{ marginTop: "1rem" }}>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleLike();
-          }}
-          style={{ marginRight: "1rem" }}
-        >
-          {post.liked ? "💔 Dislike" : "❤️ Like"} ({post.likes})
+      <div style={{ display: "flex", gap: ".5rem", marginTop: "1rem" }}>
+        <button disabled={!prevCursor || loading} onClick={() => load({ cursorArg: prevCursor, direction: "prev" })}>
+          ← Precedenti
         </button>
-      </div>
-      <div style={{ marginTop: "1rem" }}>
-        <h4>Commenti</h4>
-        {post.comments.map((c) => (
-          <p key={c.id}>
-            <strong>{c.author}:</strong> {c.text}
-          </p>
-        ))}
-        <input
-          type="text"
-          placeholder="Scrivi un commento..."
-          value={commentText}
-          onChange={(e) => setCommentText(e.target.value)}
-          style={{ width: "80%", marginRight: "0.5rem" }}
-          onClick={(e) => e.stopPropagation()}
-        />
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onAddComment(post.id, commentText);
-            setCommentText("");
-          }}
-        >
-          Invia
+        <button disabled={!nextCursor || loading} onClick={() => load({ cursorArg: nextCursor, direction: "next" })}>
+          Successivi →
         </button>
       </div>
     </div>
